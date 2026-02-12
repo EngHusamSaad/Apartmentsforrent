@@ -1,0 +1,37 @@
+{% extends "layout/base.html" %}
+{% block title %}Buildings{% endblock %}
+
+{% block content %}
+<div class="d-flex align-items-center justify-content-between mb-3">
+  <h3 class="mb-0">Buildings</h3>
+  <a class="btn btn-primary" href="{% url 'building_create' %}">Add Building</a>
+</div>
+
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead class="table-light">
+        <tr>
+          <th>Name</th>
+          <th>Address</th>
+          <th class="text-end">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for b in buildings %}
+        <tr>
+          <td>{{ b.name }}</td>
+          <td class="text-muted">{{ b.address }}</td>
+          <td class="text-end">
+            <a class="btn btn-sm btn-outline-primary" href="{% url 'building_edit' b.id %}">Edit</a>
+            <a class="btn btn-sm btn-outline-danger" href="{% url 'building_delete' b.id %}">Delete</a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="3" class="text-center text-muted p-4">No buildings yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
