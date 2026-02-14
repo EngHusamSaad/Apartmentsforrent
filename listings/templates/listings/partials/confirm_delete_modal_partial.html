@@ -1,0 +1,7 @@
+<p>هل أنت متأكد من حذف: <strong>{{ object }}</strong>؟</p>
+<form hx-post="{{ request.path }}" hx-target="#main-content" hx-swap="innerHTML">
+  {% csrf_token %}
+  <button class="btn btn-danger" type="submit">نعم، احذف</button>
+  <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">إلغاء</button>
+</form>
+<script>document.getElementById('appModalTitle').textContent = '{{ title|escapejs }}';</script>

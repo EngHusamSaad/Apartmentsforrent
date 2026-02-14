@@ -1,13 +1,16 @@
 <!doctype html>
-<html lang="en">
+<html lang="ar" dir="rtl">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>{% block title %}Apartments{% endblock %}</title>
 
+  <!-- Cairo font -->
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
   <!-- Bootstrap 5 CDN -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <style>
+    body { font-family: 'Cairo', sans-serif; }
     .sidebar {
       width: 260px;
       min-height: 100vh;
@@ -30,20 +33,20 @@
     </div>
 
     <nav class="nav nav-pills flex-column gap-1">
-      <a class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" href="{% url 'dashboard' %}">
-        Dashboard
+      <a class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" href="{% url 'dashboard' %}" hx-get="{% url 'dashboard' %}" hx-target="#main-content" hx-push-url="true">
+        لوحة التحكم
       </a>
-      <a class="nav-link {% if request.resolver_match.url_name in 'building_list building_create building_edit' %}active{% endif %}" href="{% url 'building_list' %}">
-        Buildings
+      <a class="nav-link {% if request.resolver_match.url_name in 'building_list building_create building_edit' %}active{% endif %}" href="{% url 'building_list' %}" hx-get="{% url 'building_list' %}" hx-target="#main-content" hx-push-url="true">
+        المباني
       </a>
-      <a class="nav-link {% if request.resolver_match.url_name in 'apartment_list apartment_create apartment_edit' %}active{% endif %}" href="{% url 'apartment_list' %}">
-        Apartments
+      <a class="nav-link {% if request.resolver_match.url_name in 'apartment_list apartment_create apartment_edit' %}active{% endif %}" href="{% url 'apartment_list' %}" hx-get="{% url 'apartment_list' %}" hx-target="#main-content" hx-push-url="true">
+        الشقق
       </a>
-      <a class="nav-link {% if request.resolver_match.url_name in 'tenant_list tenant_create tenant_edit' %}active{% endif %}" href="{% url 'tenant_list' %}">
-        Tenants
+      <a class="nav-link {% if request.resolver_match.url_name in 'tenant_list tenant_create tenant_edit' %}active{% endif %}" href="{% url 'tenant_list' %}" hx-get="{% url 'tenant_list' %}" hx-target="#main-content" hx-push-url="true">
+        المستأجرون
       </a>
-      <a class="nav-link {% if request.resolver_match.url_name in 'lease_list lease_create lease_edit' %}active{% endif %}" href="{% url 'lease_list' %}">
-        Leases
+      <a class="nav-link {% if request.resolver_match.url_name in 'lease_list lease_create lease_edit' %}active{% endif %}" href="{% url 'lease_list' %}" hx-get="{% url 'lease_list' %}" hx-target="#main-content" hx-push-url="true">
+        عقود الإيجار
       </a>
     </nav>
 
@@ -56,11 +59,37 @@
   <!-- Main -->
   <main class="flex-grow-1 p-4">
     <div class="container-fluid">
-      {% block content %}{% endblock %}
+      <div id="main-content">
+        {% block content %}{% endblock %}
+      </div>
     </div>
   </main>
 </div>
 
+<!-- App Modal -->
+<div class="modal fade" id="appModal" tabindex="-1">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="appModalTitle"></h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body" id="appModalBody"></div>
+    </div>
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://unpkg.com/htmx.org@1.9.12"></script>
+<script>
+document.body.addEventListener('htmx:afterSwap', function(evt) {
+  if (evt.detail.target.id === 'appModalBody') {
+    new bootstrap.Modal(document.getElementById('appModal')).show();
+  }
+});
+document.body.addEventListener('closeModal', function() {
+  bootstrap.Modal.getInstance(document.getElementById('appModal'))?.hide();
+});
+</script>
 </body>
 </html>
