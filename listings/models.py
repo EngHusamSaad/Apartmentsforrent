@@ -1,9 +1,15 @@
 from django.db import models
 
+
 class Building(models.Model):
-    name = models.CharField(max_length=150)
-    address = models.CharField(max_length=255, blank=True)
-    notes = models.TextField(blank=True)
+    name = models.CharField("اسم العمارة", max_length=150)
+    address = models.CharField("العنوان", max_length=255, blank=True)
+    notes = models.TextField("ملاحظات", blank=True)
+
+    class Meta:
+        verbose_name = "عمارة"
+        verbose_name_plural = "العمارات"
+        ordering = ["name"]
 
     def __str__(self):
         return self.name
@@ -11,34 +17,52 @@ class Building(models.Model):
 
 class Apartment(models.Model):
     class Status(models.TextChoices):
-        VACANT = "VACANT", "Vacant"
-        RENTED = "RENTED", "Rented"
-        MAINTENANCE = "MAINT", "Maintenance"
+        VACANT = "VACANT", "شاغرة"
+        RENTED = "RENTED", "مؤجرة"
+        MAINTENANCE = "MAINT", "صيانة"
 
-    building = models.ForeignKey(Building, on_delete=models.CASCADE, related_name="apartments")
-    apartment_no = models.CharField(max_length=50)
-    floor = models.CharField(max_length=50, blank=True)
+    building = models.ForeignKey(
+        Building,
+        verbose_name="العمارة",
+        on_delete=models.CASCADE,
+        related_name="apartments"
+    )
 
-    rooms = models.PositiveSmallIntegerField(default=0)
-    area_m2 = models.DecimalField(max_digits=8, decimal_places=2, default=0)
+    apartment_no = models.CharField("رقم الشقة", max_length=50)
+    floor = models.CharField("الطابق", max_length=50, blank=True)
 
-    rent_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
-    status = models.CharField(max_length=10, choices=Status.choices, default=Status.VACANT)
+    rooms = models.PositiveSmallIntegerField("عدد الغرف", default=0)
+    area_m2 = models.DecimalField("المساحة (م²)", max_digits=8, decimal_places=2, default=0)
 
-    notes = models.TextField(blank=True)
+    rent_amount = models.DecimalField("قيمة الإيجار", max_digits=12, decimal_places=2, default=0)
+    status = models.CharField("الحالة", max_length=10, choices=Status.choices, default=Status.VACANT)
+
+    notes = models.TextField("ملاحظات", blank=True)
 
     class Meta:
+        verbose_name = "شقة"
+        verbose_name_plural = "الشقق"
         unique_together = ("building", "apartment_no")
+        ordering = ["building", "apartment_no"]
 
     def __str__(self):
-        return f"{self.building.name} - {self.apartment_no}"
+        return f"{self.building.name} - شقة {self.apartment_no}"
 
 
 class Tenant(models.Model):
-    full_name = models.CharField(max_length=150)
-    phone = models.CharField(max_length=50, blank=True)
-    id_number = models.CharField(max_length=50, blank=True)
-    notes = models.TextField(blank=True)
+    full_name = models.CharField("اسم المستأجر", max_length=150)
+    phone = models.CharField("رقم الهاتف", max_length=50, blank=True)
+    id_number = models.CharField("رقم الهوية", max_length=50, blank=True)
+
+    address = models.CharField("العنوان", max_length=255, blank=True)  # ✅ جديد
+
+    id_image = models.ImageField("صورة الهوية", upload_to="tenant_ids/", blank=True, null=True)
+    notes = models.TextField("ملاحظات", blank=True)
+
+    class Meta:
+        verbose_name = "مستأجر"
+        verbose_name_plural = "المستأجرون"
+        ordering = ["full_name"]
 
     def __str__(self):
         return self.full_name
@@ -46,20 +70,55 @@ class Tenant(models.Model):
 
 class Lease(models.Model):
     class Status(models.TextChoices):
-        ACTIVE = "ACTIVE", "Active"
-        ENDED = "ENDED", "Ended"
+        ACTIVE = "ACTIVE", "نشط"
+        ENDED = "ENDED", "منتهي"
 
-    apartment = models.ForeignKey(Apartment, on_delete=models.PROTECT, related_name="leases")
-    tenant = models.ForeignKey(Tenant, on_delete=models.PROTECT, related_name="leases")
+    apartment = models.ForeignKey(
+        Apartment,
+        verbose_name="الشقة",
+        on_delete=models.PROTECT,
+        related_name="leases"
+    )
 
-    start_date = models.DateField()
-    end_date = models.DateField(null=True, blank=True)
+    tenant = models.ForeignKey(
+        Tenant,
+        verbose_name="المستأجر",
+        on_delete=models.PROTECT,
+        related_name="leases"
+    )
 
-    rent_amount = models.DecimalField(max_digits=12, decimal_places=2)  # المتفق عليه في العقد
-    security_deposit = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    start_date = models.DateField("تاريخ البداية")
+    end_date = models.DateField("تاريخ النهاية", null=True, blank=True)
 
-    status = models.CharField(max_length=10, choices=Status.choices, default=Status.ACTIVE)
-    notes = models.TextField(blank=True)
+    rent_amount = models.DecimalField("قيمة الإيجار المتفق عليها", max_digits=12, decimal_places=2)
+    security_deposit = models.DecimalField("مبلغ التأمين", max_digits=12, decimal_places=2, default=0)
+
+    status = models.CharField("حالة العقد", max_length=10, choices=Status.choices, default=Status.ACTIVE)
+    notes = models.TextField("ملاحظات", blank=True)
+    class Meta:
+        verbose_name = "عقد"
+        verbose_name_plural = "العقود"
+        ordering = ["-start_date"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["apartment"],
+                condition=models.Q(status="ACTIVE"),
+                name="unique_active_lease_per_apartment",
+            )
+        ]
+    def __str__(self):
+        return f"{self.apartment} - {self.tenant}"
+
+
+class ContractTemplate(models.Model):
+    title = models.CharField("العنوان", max_length=200)
+    body = models.TextField("نص العقد")
+    is_active = models.BooleanField("نشط", default=True)
+
+    class Meta:
+        verbose_name = "قالب عقد"
+        verbose_name_plural = "قوالب العقود"
+        ordering = ["-is_active", "title"]
 
     def __str__(self):
-        return f"{self.apartment} / {self.tenant}"
+        return self.title

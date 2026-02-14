@@ -27,6 +27,10 @@
           <td>{{ l.rent_amount }}</td>
           <td>{{ l.get_status_display }}</td>
           <td class="text-end">
+            <a class="btn btn-sm btn-outline-secondary"
+               href="{% url 'lease_contract_preview' l.id %}">
+              عقد PDF
+            </a>
             <a class="btn btn-sm btn-outline-primary" href="{% url 'lease_edit' l.id %}" hx-get="{% url 'lease_edit' l.id %}" hx-target="#appModalBody">تعديل</a>
             <a class="btn btn-sm btn-outline-danger" href="{% url 'lease_delete' l.id %}" hx-get="{% url 'lease_delete' l.id %}" hx-target="#appModalBody">حذف</a>
           </td>

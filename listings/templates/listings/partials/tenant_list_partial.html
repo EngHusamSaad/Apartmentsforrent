@@ -1,16 +1,21 @@
 <div class="d-flex align-items-center justify-content-between mb-3">
   <h3 class="mb-0">المستأجرون</h3>
-  <a class="btn btn-primary" href="{% url 'tenant_create' %}" hx-get="{% url 'tenant_create' %}" hx-target="#appModalBody">إضافة</a>
+
+  <a class="btn btn-primary" hx-get="{% url 'tenant_create' %}" hx-target="#appModalBody" role="button">
+    إضافة مستأجر
+  </a>
 </div>
 
-<div class="card">
+<div class="card shadow-sm">
   <div class="table-responsive">
-    <table class="table table-hover mb-0">
+    <table class="table table-hover mb-0 align-middle">
       <thead class="table-light">
         <tr>
           <th>الاسم</th>
           <th>الهاتف</th>
-          <th>الهوية</th>
+          <th>رقم الهوية</th>
+          <th>العنوان</th>
+          <th>صورة الهوية</th>
           <th class="text-end">إجراءات</th>
         </tr>
       </thead>
@@ -20,13 +25,36 @@
           <td>{{ t.full_name }}</td>
           <td>{{ t.phone }}</td>
           <td>{{ t.id_number }}</td>
+          <td>{{ t.address|default:"—" }}</td>
+          <td>
+            {% if t.id_image %}
+            <a href="{{ t.id_image.url }}" target="_blank">
+              <img src="{{ t.id_image.url }}" alt="هوية" style="height:40px;border-radius:6px;">
+            </a>
+            {% else %}
+            <span class="text-muted">—</span>
+            {% endif %}
+          </td>
           <td class="text-end">
-            <a class="btn btn-sm btn-outline-primary" href="{% url 'tenant_edit' t.id %}" hx-get="{% url 'tenant_edit' t.id %}" hx-target="#appModalBody">تعديل</a>
-            <a class="btn btn-sm btn-outline-danger" href="{% url 'tenant_delete' t.id %}" hx-get="{% url 'tenant_delete' t.id %}" hx-target="#appModalBody">حذف</a>
+            <div class="btn-group btn-group-sm">
+              <a class="btn btn-outline-primary" hx-get="{% url 'tenant_edit' t.id %}" hx-target="#appModalBody"
+                role="button">
+                تعديل
+              </a>
+
+              <a class="btn btn-outline-danger" hx-get="{% url 'tenant_delete' t.id %}" hx-target="#appModalBody"
+                role="button">
+                حذف
+              </a>
+            </div>
           </td>
         </tr>
         {% empty %}
-        <tr><td colspan="4" class="text-center text-muted p-4">لا يوجد مستأجرون.</td></tr>
+        <tr>
+          <td colspan="5" class="text-center text-muted py-4">
+            لا يوجد مستأجرون حالياً.
+          </td>
+        </tr>
         {% endfor %}
       </tbody>
     </table>

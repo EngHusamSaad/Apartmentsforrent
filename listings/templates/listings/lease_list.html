@@ -1,10 +1,10 @@
 {% extends "layout/base.html" %}
-{% block title %}Leases{% endblock %}
+{% block title %}عقود الاجار{% endblock %}
 
 {% block content %}
 <div class="d-flex align-items-center justify-content-between mb-3">
   <h3 class="mb-0">Leases</h3>
-  <a class="btn btn-primary" href="{% url 'lease_create' %}">Add Lease</a>
+  <a class="btn btn-primary" href="{% url 'lease_create' %}">اضافة عقد اجار</a>
 </div>
 
 <div class="card">
@@ -31,8 +31,9 @@
           <td>{{ l.rent_amount }}</td>
           <td>{{ l.get_status_display }}</td>
           <td class="text-end">
-            <a class="btn btn-sm btn-outline-primary" href="{% url 'lease_edit' l.id %}">Edit</a>
-            <a class="btn btn-sm btn-outline-danger" href="{% url 'lease_delete' l.id %}">Delete</a>
+            <a class="btn btn-sm btn-outline-secondary" href="{% url 'lease_contract_preview' l.id %}" target="_blank" rel="noopener">عقد PDF</a>
+            <a class="btn btn-sm btn-outline-primary" href="{% url 'lease_edit' l.id %}">تعديل</a>
+            <a class="btn btn-sm btn-outline-danger" href="{% url 'lease_delete' l.id %}">حذف</a>
           </td>
         </tr>
         {% empty %}

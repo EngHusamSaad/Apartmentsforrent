@@ -23,4 +23,5 @@ urlpatterns = [
     path("leases/add/", views.lease_create, name="lease_create"),
     path("leases/<int:pk>/edit/", views.lease_edit, name="lease_edit"),
     path("leases/<int:pk>/delete/", views.lease_delete, name="lease_delete"),
+    path("leases/<int:lease_id>/contract/", views.lease_contract_preview, name="lease_contract_preview"),
 ]

@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{{ title }}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Cairo', sans-serif; padding: 2rem; max-width: 800px; margin: 0 auto; }
+    .contract-body { white-space: pre-wrap; line-height: 1.8; }
+  
+    .toolbar{
+      display:flex;
+      justify-content:flex-start; /* RTL: هذا بيطلع الزر يمين */
+      margin-bottom: 16px;
+    }
+    .print-btn{
+      border: 1px solid #222;
+      background: #222;
+      color: #fff;
+      padding: 8px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-family: inherit;
+      font-weight: 600;
+    }
+    .print-btn:hover{ opacity: .92; }
+  
+    @page { size: A4; margin: 20mm; }
+  
+    @media print {
+      body { padding: 0; margin: 0; }
+      .print-btn, .toolbar, .no-print, .sidebar { display: none !important; }
+    }
+  
+    .dyn {
+      font-weight: 700;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+  </style>
+  
+</head>
+<body>
+  <div class="toolbar">
+    <button type="button" class="print-btn" onclick="window.print()">
+      طباعة / حفظ PDF
+    </button>
+  </div>
+  <h1 style="text-align: center; margin-bottom: 1.5rem;">{{ title }}</h1>
+  <div class="contract-body">{{ filled_body|safe }}</div>
+</body>
+</html>

@@ -28,24 +28,24 @@
   <!-- Sidebar -->
   <aside class="sidebar bg-white border-end p-3">
     <div class="mb-4">
-      <div class="fw-bold fs-5">Apartments</div>
-      <div class="text-muted small">Rental Management</div>
+      <div class="fw-bold fs-5">عُمران</div>
+      <div class="text-muted small">نظام ادارة العقارات والمستأجرين</div>
     </div>
 
     <nav class="nav nav-pills flex-column gap-1">
-      <a class="nav-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}" href="{% url 'dashboard' %}" hx-get="{% url 'dashboard' %}" hx-target="#main-content" hx-push-url="true">
+      <a class="nav-link" data-nav="dashboard" href="{% url 'dashboard' %}" hx-get="{% url 'dashboard' %}" hx-target="#main-content" hx-push-url="true">
         لوحة التحكم
       </a>
-      <a class="nav-link {% if request.resolver_match.url_name in 'building_list building_create building_edit' %}active{% endif %}" href="{% url 'building_list' %}" hx-get="{% url 'building_list' %}" hx-target="#main-content" hx-push-url="true">
+      <a class="nav-link" data-nav="buildings" href="{% url 'building_list' %}" hx-get="{% url 'building_list' %}" hx-target="#main-content" hx-push-url="true">
         المباني
       </a>
-      <a class="nav-link {% if request.resolver_match.url_name in 'apartment_list apartment_create apartment_edit' %}active{% endif %}" href="{% url 'apartment_list' %}" hx-get="{% url 'apartment_list' %}" hx-target="#main-content" hx-push-url="true">
+      <a class="nav-link" data-nav="apartments" href="{% url 'apartment_list' %}" hx-get="{% url 'apartment_list' %}" hx-target="#main-content" hx-push-url="true">
         الشقق
       </a>
-      <a class="nav-link {% if request.resolver_match.url_name in 'tenant_list tenant_create tenant_edit' %}active{% endif %}" href="{% url 'tenant_list' %}" hx-get="{% url 'tenant_list' %}" hx-target="#main-content" hx-push-url="true">
+      <a class="nav-link" data-nav="tenants" href="{% url 'tenant_list' %}" hx-get="{% url 'tenant_list' %}" hx-target="#main-content" hx-push-url="true">
         المستأجرون
       </a>
-      <a class="nav-link {% if request.resolver_match.url_name in 'lease_list lease_create lease_edit' %}active{% endif %}" href="{% url 'lease_list' %}" hx-get="{% url 'lease_list' %}" hx-target="#main-content" hx-push-url="true">
+      <a class="nav-link" data-nav="leases" href="{% url 'lease_list' %}" hx-get="{% url 'lease_list' %}" hx-target="#main-content" hx-push-url="true">
         عقود الإيجار
       </a>
     </nav>
@@ -82,10 +82,28 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://unpkg.com/htmx.org@1.9.12"></script>
 <script>
+function setActiveNav() {
+  var path = window.location.pathname;
+  document.querySelectorAll('.sidebar [data-nav]').forEach(function(el) {
+    var nav = el.getAttribute('data-nav');
+    var isActive = (nav === 'dashboard' && (path === '/' || path === '')) ||
+      (nav !== 'dashboard' && path.indexOf('/' + nav + '/') === 0);
+    el.classList.toggle('active', !!isActive);
+  });
+}
+document.addEventListener('DOMContentLoaded', setActiveNav);
+document.body.addEventListener('htmx:pushedIntoHistory', setActiveNav);
+document.body.addEventListener('htmx:afterOnLoad', setActiveNav);
 document.body.addEventListener('htmx:afterSwap', function(evt) {
-  if (evt.detail.target.id === 'appModalBody') {
-    new bootstrap.Modal(document.getElementById('appModal')).show();
+  if (evt.detail.target && evt.detail.target.id === 'appModalBody') {
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('appModal')).show();
   }
+});
+
+document.body.addEventListener('closeModal', function() {
+  const modalEl = document.getElementById('appModal');
+  bootstrap.Modal.getOrCreateInstance(modalEl).hide();
+  document.getElementById('appModalBody').innerHTML = '';
 });
 document.body.addEventListener('closeModal', function() {
   bootstrap.Modal.getInstance(document.getElementById('appModal'))?.hide();
