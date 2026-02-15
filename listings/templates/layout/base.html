@@ -6,78 +6,236 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>{% block title %}Apartments{% endblock %}</title>
 
+  <!-- Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+
+  <!-- Bootstrap -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 
+  <!-- Bootstrap Icons -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
   <style>
-    body { font-family: 'Cairo', sans-serif; }
-    .sidebar {
-      width: 260px;
+    :root{
+      --brand: #3F5BF6;
+      --brand-600: #364CE0;
+      --brand-100: rgba(63,91,246,.12);
+
+      --bg: #F6F7FB;
+      --card: #FFFFFF;
+      --text: #111827;
+      --muted: #6B7280;
+      --border: rgba(17,24,39,.10);
+      --shadow: 0 10px 30px rgba(17,24,39,.08);
+      --radius: 18px;
+    }
+
+    body{
+      font-family: 'Cairo', sans-serif;
+      background: var(--bg) !important;
+      color: var(--text);
+    }
+
+    main .container-fluid{ max-width: 1240px; }
+
+    /* ===== Sidebar ===== */
+    .sidebar{
+      width: 275px;
       min-height: 100vh;
       position: sticky;
       top: 0;
-      text-align: center;
-    }
-    .nav-link.active { font-weight: 600; }
-
-    .sidebar-logo {
-      width: 150px;
-      height: auto;
-      margin-bottom: 5px;
+      background: #fff;
+      border-inline-end: 1px solid var(--border);
+      padding: 18px !important;
     }
 
-    .object-fit-cover { object-fit: cover; }
+    .sidebar-brand{
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      flex-direction:column;
+      gap: 8px;
+      padding: 10px 0 14px;
+    }
 
-    .tenant-link { font-weight: 600; }
-    .tenant-link:hover { text-decoration: underline !important; }
+    .sidebar-logo{
+      width: 140px;
+      height:auto;
+    }
 
-    .modal .table th, .modal .table td { vertical-align: middle; }
-    .modal .badge { font-weight: 600; }
-    .modal .border { border-color: rgba(0,0,0,.08) !important; }
+    .sidebar small, .text-muted{ color: var(--muted) !important; }
 
-    /* يساعد على ترتيب زر الإغلاق بكل المودالات */
-    .modal-header .btn-close { margin: 0 !important; }
+    .sidebar .nav-link{
+      border-radius: 14px;
+      padding: .72rem .9rem;
+      color: #111827;
+      display:flex;
+      align-items:center;
+      gap: .7rem;
+      transition: .15s ease-in-out;
+    }
+
+    .sidebar .nav-link:hover{
+      background: rgba(17,24,39,.04);
+    }
+
+    .sidebar .nav-link.active{
+      background: var(--brand-100);
+      color: var(--brand);
+      font-weight: 800;
+    }
+
+    .sidebar .nav-link i{ font-size: 1.05rem; }
+
+    .sidebar-footer{
+      margin-top: 14px;
+      padding-top: 12px;
+      border-top: 1px solid var(--border);
+      font-size: .9rem;
+      color: var(--muted);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap: 8px;
+    }
+
+    /* ===== Cards ===== */
+    .card{
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: 0 6px 18px rgba(17,24,39,.06);
+    }
+
+    /* ===== Tables ===== */
+    .table thead th{
+      font-weight: 800;
+      color: #374151;
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+    .table td, .table th{
+      padding-top: .75rem;
+      padding-bottom: .75rem;
+      border-color: rgba(17,24,39,.06);
+    }
+    .table-hover tbody tr:hover{
+      background: rgba(63,91,246,.04);
+    }
+
+    /* ===== Buttons ===== */
+    .btn{
+      border-radius: 14px;
+      font-weight: 700;
+    }
+    .btn-sm{ border-radius: 12px; font-weight: 700; }
+
+    .btn-primary{
+      background: var(--brand);
+      border-color: var(--brand);
+    }
+    .btn-primary:hover{
+      background: var(--brand-600);
+      border-color: var(--brand-600);
+    }
+
+    .btn-outline-primary{
+      color: var(--brand);
+      border-color: rgba(63,91,246,.45);
+    }
+    .btn-outline-primary:hover{
+      background: var(--brand);
+      border-color: var(--brand);
+      color:#fff;
+    }
+
+    /* ===== Inputs ===== */
+    .form-control, .form-select{
+      border-radius: 14px;
+      border-color: var(--border);
+    }
+    .form-control:focus, .form-select:focus{
+      border-color: rgba(63,91,246,.55);
+      box-shadow: 0 0 0 .2rem rgba(63,91,246,.12);
+    }
+
+    /* ===== Badges ===== */
+    .badge{ font-weight: 800; }
+    .badge.text-bg-primary{ background: var(--brand) !important; }
+
+    /* ===== Modals ===== */
+    .modal-content{
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+    }
+    .modal-header{ border-bottom: 1px solid var(--border); }
+    .modal-footer{ border-top: 1px solid var(--border); }
+    .modal-header .btn-close{ margin: 0 !important; }
+
+    /* Helpers */
+    .object-fit-cover{ object-fit: cover; }
+    .tenant-link{ font-weight: 800; color: var(--brand); }
+    .tenant-link:hover{ text-decoration: underline !important; }
+
+    /* Occupancy progress */
+    .occ-progress{
+      height: 10px;
+      border-radius: 999px;
+      background: #eef2ff;
+      overflow: hidden;
+    }
+    .occ-bar{
+      background: #3F5BF6;
+      border-radius: 999px;
+      width: 0%;
+      transition: width .4s ease;
+    }
   </style>
 </head>
 
-<body class="bg-light">
+<body>
 <div class="d-flex">
 
   <!-- Sidebar -->
-  <aside class="sidebar bg-white border-end p-3">
+  <aside class="sidebar">
     {% load static %}
 
-    <div class="mb-4 text-center">
-      <img src="{% static 'listings/images/logo.png' %}"
-           alt="شعار عمران"
-           class="sidebar-logo">
-
-      <div class="text-muted small">
-        نظام إدارة العقارات والمستأجرين
-      </div>
+    <div class="sidebar-brand">
+      <img src="{% static 'listings/images/logo.png' %}" alt="شعار عمران" class="sidebar-logo">
+      <div class="text-muted small">نظام إدارة العقارات والمستأجرين</div>
     </div>
 
     <nav class="nav nav-pills flex-column gap-1">
-      <a class="nav-link" href="{% url 'dashboard' %}" hx-get="{% url 'dashboard' %}" hx-target="#main-content" hx-push-url="true">
-        لوحة التحكم
+      <a class="nav-link" href="{% url 'dashboard' %}"
+         hx-get="{% url 'dashboard' %}" hx-target="#main-content" hx-push-url="true">
+        <i class="bi bi-speedometer2"></i><span>لوحة التحكم</span>
       </a>
-      <a class="nav-link" href="{% url 'building_list' %}" hx-get="{% url 'building_list' %}" hx-target="#main-content" hx-push-url="true">
-        المباني
+
+      <a class="nav-link" href="{% url 'building_list' %}"
+         hx-get="{% url 'building_list' %}" hx-target="#main-content" hx-push-url="true">
+        <i class="bi bi-building"></i><span>المباني</span>
       </a>
-      <a class="nav-link" href="{% url 'apartment_list' %}" hx-get="{% url 'apartment_list' %}" hx-target="#main-content" hx-push-url="true">
-        الشقق
+
+      <a class="nav-link" href="{% url 'apartment_list' %}"
+         hx-get="{% url 'apartment_list' %}" hx-target="#main-content" hx-push-url="true">
+        <i class="bi bi-house-door"></i><span>الشقق</span>
       </a>
-      <a class="nav-link" href="{% url 'tenant_list' %}" hx-get="{% url 'tenant_list' %}" hx-target="#main-content" hx-push-url="true">
-        المستأجرون
+
+      <a class="nav-link" href="{% url 'tenant_list' %}"
+         hx-get="{% url 'tenant_list' %}" hx-target="#main-content" hx-push-url="true">
+        <i class="bi bi-people"></i><span>المستأجرون</span>
       </a>
-      <a class="nav-link" href="{% url 'lease_list' %}" hx-get="{% url 'lease_list' %}" hx-target="#main-content" hx-push-url="true">
-        عقود الإيجار
+
+      <a class="nav-link" href="{% url 'lease_list' %}"
+         hx-get="{% url 'lease_list' %}" hx-target="#main-content" hx-push-url="true">
+        <i class="bi bi-file-earmark-text"></i><span>عقود الإيجار</span>
       </a>
     </nav>
 
-    <hr>
-    <div class="small text-muted">
-      Logged in: {{ request.user.username }}
+    <div class="sidebar-footer">
+      <i class="bi bi-person-circle"></i>
+      <span>{{ request.user.username }}</span>
     </div>
   </aside>
 
@@ -91,9 +249,9 @@
   </main>
 </div>
 
-<!-- App Modal (forms) -->
+<!-- App Modal -->
 <div class="modal fade" id="appModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog">
+  <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title" id="appModalTitle"></h5>
@@ -104,7 +262,7 @@
   </div>
 </div>
 
-<!-- Toggle Status Modal (ONE place only) -->
+<!-- Toggle Status Modal -->
 <div class="modal fade" id="toggleStatusModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content">
@@ -122,7 +280,7 @@
       </div>
 
       <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">إلغاء</button>
         <button type="button" class="btn btn-primary" id="confirmToggleBtn">تأكيد</button>
       </div>
 
@@ -130,7 +288,7 @@
   </div>
 </div>
 
-<!-- Error Modal (ONE place only) -->
+<!-- Error Modal -->
 <div class="modal fade" id="errorModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered">
     <div class="modal-content border-danger">
@@ -144,7 +302,67 @@
       </div>
 
       <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إغلاق</button>
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">إغلاق</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Tenant Quick View Modal -->
+<div class="modal fade" id="tenantModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-md">
+    <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+
+      <div class="modal-header bg-light">
+        <div class="w-100 d-flex align-items-center justify-content-between">
+          <div class="d-flex align-items-center gap-3">
+            <div class="rounded-circle bg-primary-subtle d-flex align-items-center justify-content-center"
+                 style="width:44px;height:44px;">
+              <span class="fw-bold" style="color: var(--brand);">م</span>
+            </div>
+            <div>
+              <div class="fw-bold" style="line-height:1.1">تفاصيل المستأجر</div>
+              <div class="small text-muted">عرض سريع</div>
+            </div>
+          </div>
+
+          <button type="button" class="btn-close m-0 flex-shrink-0"
+                  data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+      </div>
+
+      <div class="modal-body p-3">
+        <div id="tenantModalBody">
+          <div class="py-4 text-center text-muted">
+            <div class="spinner-border" role="status" aria-hidden="true"></div>
+            <div class="mt-2 small">جاري تحميل البيانات...</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer bg-light">
+        <button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">إغلاق</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Image Preview Modal -->
+<div class="modal fade" id="imagePreviewModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content bg-transparent border-0 shadow-none">
+      <div class="modal-header border-0">
+        <button type="button"
+                class="btn-close bg-white rounded-circle p-2"
+                data-bs-dismiss="modal"
+                aria-label="Close"></button>
+      </div>
+
+      <div class="modal-body text-center p-0">
+        <img id="previewImage" src=""
+             class="img-fluid rounded shadow"
+             style="max-height:80vh;">
       </div>
     </div>
   </div>
@@ -154,7 +372,7 @@
 <script src="https://unpkg.com/htmx.org@1.9.12"></script>
 
 <script>
-  // ========= Sidebar active (reliable with HTMX) =========
+  // ========= Sidebar active =========
   function setActiveNav() {
     const path = window.location.pathname;
     document.querySelectorAll('.sidebar a.nav-link').forEach(function(a) {
@@ -168,7 +386,7 @@
   document.body.addEventListener('htmx:afterSwap', setActiveNav);
   document.body.addEventListener('htmx:afterSettle', setActiveNav);
 
-  // ========= App Modal open/close (forms) =========
+  // ========= App Modal (forms) =========
   document.body.addEventListener('htmx:afterSwap', function(evt) {
     if (evt.detail.target && evt.detail.target.id === 'appModalBody') {
       bootstrap.Modal.getOrCreateInstance(document.getElementById('appModal')).show();
@@ -181,7 +399,7 @@
     document.getElementById('appModalBody').innerHTML = '';
   });
 
-  // ========= Apartments Toggle Status (Global) =========
+  // ========= Apartments Toggle Status =========
   let selectedApartmentId = null;
   let selectedBadgeEl = null;
   let allowToggle = true;
@@ -196,8 +414,8 @@
     selectedBadgeEl = el;
     selectedApartmentId = el.dataset.apartmentId;
 
-    const currentStatus = el.dataset.currentStatus;   // VACANT / RENTED / MAINT
-    const currentDisplay = el.dataset.currentDisplay; // display text
+    const currentStatus = el.dataset.currentStatus;
+    const currentDisplay = el.dataset.currentDisplay;
 
     const maintenanceHint = document.getElementById("maintenanceHint");
     if (maintenanceHint) maintenanceHint.classList.add("d-none");
@@ -274,85 +492,30 @@
       showErrorModal("مشكلة اتصال أو خطأ غير متوقع");
     }
   });
-</script>
 
-<!-- Tenant Quick View Modal -->
-<div class="modal fade" id="tenantModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered modal-md">
-    <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
-
-      <!-- ✅ FIXED HEADER (RTL-safe) -->
-      <div class="modal-header bg-light">
-        <div class="w-100 d-flex align-items-center justify-content-between">
-
-          <div class="d-flex align-items-center gap-3">
-            <div class="rounded-circle bg-primary-subtle d-flex align-items-center justify-content-center"
-                 style="width:44px;height:44px;">
-              <span class="fw-bold text-primary">م</span>
-            </div>
-            <div>
-              <div class="fw-bold" style="line-height:1.1">تفاصيل المستأجر</div>
-              <div class="small text-muted">عرض سريع</div>
-            </div>
-          </div>
-
-          <button type="button"
-                  class="btn-close m-0 flex-shrink-0"
-                  data-bs-dismiss="modal"
-                  aria-label="Close"></button>
-        </div>
-      </div>
-
-      <div class="modal-body p-3">
-        <div id="tenantModalBody">
-          <div class="py-4 text-center text-muted">
-            <div class="spinner-border" role="status" aria-hidden="true"></div>
-            <div class="mt-2 small">جاري تحميل البيانات...</div>
-          </div>
-        </div>
-      </div>
-
-      <div class="modal-footer bg-light">
-        <button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">إغلاق</button>
-      </div>
-
-    </div>
-  </div>
-</div>
-<!-- Image Preview Modal -->
-<div class="modal fade" id="imagePreviewModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered modal-lg">
-    <div class="modal-content bg-transparent border-0">
-
-      <div class="modal-header border-0">
-        <button type="button"
-                class="btn-close bg-white rounded-circle p-2"
-                data-bs-dismiss="modal"
-                aria-label="Close"></button>
-      </div>
-
-      <div class="modal-body text-center p-0">
-        <img id="previewImage"
-             src=""
-             class="img-fluid rounded shadow"
-             style="max-height:80vh;">
-      </div>
-
-    </div>
-  </div>
-</div>
-<script>
+  // ========= Image Preview Modal =========
   document.addEventListener("click", function(e) {
     const img = e.target.closest(".previewable-image");
     if (!img) return;
 
     const preview = document.getElementById("previewImage");
-    preview.src = img.dataset.full;
+    preview.src = img.dataset.full || img.src;
 
     bootstrap.Modal.getOrCreateInstance(
       document.getElementById("imagePreviewModal")
     ).show();
   });
+
+  // ========= Occupancy bars (works with HTMX too) =========
+  function initOccBars(scope=document) {
+    scope.querySelectorAll(".occ-bar").forEach(function (el) {
+      const value = parseInt(el.dataset.width || "0", 10);
+      el.style.width = Math.max(0, Math.min(100, value)) + "%";
+    });
+  }
+
+  document.addEventListener("DOMContentLoaded", () => initOccBars(document));
+  document.body.addEventListener("htmx:afterSwap", (e) => initOccBars(e.target));
 </script>
 
 </body>
