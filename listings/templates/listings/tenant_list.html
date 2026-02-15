@@ -1,39 +1,6 @@
 {% extends "layout/base.html" %}
-{% block title %}Tenants{% endblock %}
+{% block title %}المستأجرون {% endblock %}
 
 {% block content %}
-<div class="d-flex align-items-center justify-content-between mb-3">
-  <h3 class="mb-0">Tenants</h3>
-  <a class="btn btn-primary" href="{% url 'tenant_create' %}">Add Tenant</a>
-</div>
-
-<div class="card">
-  <div class="table-responsive">
-    <table class="table table-hover mb-0">
-      <thead class="table-light">
-        <tr>
-          <th>Name</th>
-          <th>Phone</th>
-          <th>ID</th>
-          <th class="text-end">Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for t in tenants %}
-        <tr>
-          <td>{{ t.full_name }}</td>
-          <td>{{ t.phone }}</td>
-          <td>{{ t.id_number }}</td>
-          <td class="text-end">
-            <a class="btn btn-sm btn-outline-primary" href="{% url 'tenant_edit' t.id %}">Edit</a>
-            <a class="btn btn-sm btn-outline-danger" href="{% url 'tenant_delete' t.id %}">Delete</a>
-          </td>
-        </tr>
-        {% empty %}
-        <tr><td colspan="4" class="text-center text-muted p-4">No tenants yet.</td></tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
-</div>
+  {% include "listings/partials/tenant_list_partial.html" %}
 {% endblock %}

@@ -24,4 +24,9 @@ urlpatterns = [
     path("leases/<int:pk>/edit/", views.lease_edit, name="lease_edit"),
     path("leases/<int:pk>/delete/", views.lease_delete, name="lease_delete"),
     path("leases/<int:lease_id>/contract/", views.lease_contract_preview, name="lease_contract_preview"),
+    
+    path("apartments/<int:pk>/toggle-status/", views.toggle_apartment_status, name="toggle_apartment_status"),
+    path("tenants/quick/<int:pk>/", views.tenant_quick_view, name="tenant_quick_view"),
+
+
 ]

@@ -16,6 +16,12 @@ class ApartmentForm(forms.ModelForm):
 
 
 class TenantForm(forms.ModelForm):
+    remove_photo = forms.BooleanField(
+        required=False,
+        label="حذف الصورة الشخصية",
+        widget=forms.CheckboxInput(attrs={"class": "form-check-input"})
+    )
+
     remove_id_image = forms.BooleanField(
         required=False,
         label="حذف صورة الهوية",
@@ -24,12 +30,21 @@ class TenantForm(forms.ModelForm):
 
     class Meta:
         model = Tenant
-        fields = ["full_name", "phone", "id_number", "id_image","address", "notes"]
+        fields = ["full_name", "phone", "id_number", "photo", "id_image", "address", "notes"]
         widgets = {
-            # هذا يلغي ClearableFileInput وبالتالي يختفي Currently/Clear/Change
+            "photo": forms.FileInput(attrs={"class": "form-control", "accept": "image/*"}),
             "id_image": forms.FileInput(attrs={"class": "form-control", "accept": "image/*"}),
         }
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        # Bootstrap classes لباقي الحقول (حسب ما تحب)
+        self.fields["full_name"].widget.attrs.update({"class": "form-control"})
+        self.fields["phone"].widget.attrs.update({"class": "form-control"})
+        self.fields["id_number"].widget.attrs.update({"class": "form-control"})
+        self.fields["address"].widget.attrs.update({"class": "form-control"})
+        self.fields["notes"].widget.attrs.update({"class": "form-control", "rows": 3})
 
 class LeaseForm(forms.ModelForm):
     class Meta:

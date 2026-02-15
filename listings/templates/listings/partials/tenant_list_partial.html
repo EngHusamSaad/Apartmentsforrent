@@ -11,6 +11,7 @@
     <table class="table table-hover mb-0 align-middle">
       <thead class="table-light">
         <tr>
+          <th style="width:70px">الصورة</th>
           <th>الاسم</th>
           <th>الهاتف</th>
           <th>رقم الهوية</th>
@@ -22,17 +23,31 @@
       <tbody>
         {% for t in tenants %}
         <tr>
+          <td style="width:70px">
+            {% if t.photo %}
+              <img src="{{ t.photo.url }}"
+                   alt="صورة"
+                   class="rounded-circle border shadow-sm object-fit-cover"
+                   style="width:44px;height:44px;">
+            {% else %}
+              <div class="rounded-circle bg-primary-subtle border d-flex align-items-center justify-content-center"
+                   style="width:44px;height:44px;font-weight:800;">
+                {{ t.full_name|slice:":1" }}
+              </div>
+            {% endif %}
+          </td>
           <td>{{ t.full_name }}</td>
           <td>{{ t.phone }}</td>
           <td>{{ t.id_number }}</td>
           <td>{{ t.address|default:"—" }}</td>
           <td>
             {% if t.id_image %}
-            <a href="{{ t.id_image.url }}" target="_blank">
-              <img src="{{ t.id_image.url }}" alt="هوية" style="height:40px;border-radius:6px;">
-            </a>
+              <img src="{{ t.id_image.url }}"
+                   data-full="{{ t.id_image.url }}"
+                   class="rounded border previewable-image"
+                   style="height:40px; cursor:pointer;">
             {% else %}
-            <span class="text-muted">—</span>
+              <span class="text-muted">—</span>
             {% endif %}
           </td>
           <td class="text-end">
@@ -51,7 +66,7 @@
         </tr>
         {% empty %}
         <tr>
-          <td colspan="5" class="text-center text-muted py-4">
+          <td colspan="7" class="text-center text-muted py-4">
             لا يوجد مستأجرون حالياً.
           </td>
         </tr>

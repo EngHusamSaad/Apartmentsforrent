@@ -1,41 +1,7 @@
+<!-- listings/apartment_list.html -->
 {% extends "layout/base.html" %}
 {% block title %}Apartments{% endblock %}
 
 {% block content %}
-<div class="d-flex align-items-center justify-content-between mb-3">
-  <h3 class="mb-0">Apartments</h3>
-  <a class="btn btn-primary" href="{% url 'apartment_create' %}">Add Apartment</a>
-</div>
-
-<div class="card">
-  <div class="table-responsive">
-    <table class="table table-hover mb-0">
-      <thead class="table-light">
-        <tr>
-          <th>Building</th>
-          <th>No</th>
-          <th>Status</th>
-          <th>Rent</th>
-          <th class="text-end">Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for a in apartments %}
-        <tr>
-          <td>{{ a.building.name }}</td>
-          <td>{{ a.apartment_no }}</td>
-          <td>{{ a.get_status_display }}</td>
-          <td>{{ a.rent_amount }}</td>
-          <td class="text-end">
-            <a class="btn btn-sm btn-outline-primary" href="{% url 'apartment_edit' a.id %}">Edit</a>
-            <a class="btn btn-sm btn-outline-danger" href="{% url 'apartment_delete' a.id %}">Delete</a>
-          </td>
-        </tr>
-        {% empty %}
-        <tr><td colspan="5" class="text-center text-muted p-4">No apartments yet.</td></tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
-</div>
+  {% include "listings/partials/apartment_list_partial.html" %}
 {% endblock %}

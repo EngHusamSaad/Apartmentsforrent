@@ -1,44 +1,156 @@
-<div class="d-flex align-items-center justify-content-between mb-3">
-  <h3 class="mb-0">عقود الإيجار</h3>
-  <a class="btn btn-primary" href="{% url 'lease_create' %}" hx-get="{% url 'lease_create' %}" hx-target="#appModalBody">إضافة</a>
-</div>
+<!-- listings/partials/lease_list_partial.html -->
 
-<div class="card">
-  <div class="table-responsive">
-    <table class="table table-hover mb-0">
-      <thead class="table-light">
-        <tr>
-          <th>الشقة</th>
-          <th>المستأجر</th>
-          <th>البداية</th>
-          <th>النهاية</th>
-          <th>الإيجار</th>
-          <th>الحالة</th>
-          <th class="text-end">إجراءات</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for l in leases %}
-        <tr>
-          <td>{{ l.apartment }}</td>
-          <td>{{ l.tenant }}</td>
-          <td>{{ l.start_date }}</td>
-          <td>{{ l.end_date|default:"-" }}</td>
-          <td>{{ l.rent_amount }}</td>
-          <td>{{ l.get_status_display }}</td>
-          <td class="text-end">
-            <a class="btn btn-sm btn-outline-secondary"
-               href="{% url 'lease_contract_preview' l.id %}">
-              عقد PDF
-            </a>
-            <a class="btn btn-sm btn-outline-primary" href="{% url 'lease_edit' l.id %}" hx-get="{% url 'lease_edit' l.id %}" hx-target="#appModalBody">تعديل</a>
-            <a class="btn btn-sm btn-outline-danger" href="{% url 'lease_delete' l.id %}" hx-get="{% url 'lease_delete' l.id %}" hx-target="#appModalBody">حذف</a>
-          </td>
-        </tr>
-        {% empty %}
-        <tr><td colspan="7" class="text-center text-muted p-4">لا توجد عقود إيجار.</td></tr>
-        {% endfor %}
-      </tbody>
-    </table>
+<div id="leasesWrapper">
+
+  <!-- العنوان + زر الإضافة -->
+  <div class="d-flex align-items-center justify-content-between mb-2">
+    <h3 class="mb-0">عقود الإيجار</h3>
+
+    <a class="btn btn-primary"
+       href="{% url 'lease_create' %}"
+       hx-get="{% url 'lease_create' %}"
+       hx-target="#appModalBody">
+      اضافة عقد اجار جديد
+    </a>
   </div>
+
+  <!-- ✅ شريط فلترة + بحث -->
+  <form class="card mb-3 shadow-sm"
+  hx-get="{% url 'lease_list' %}"
+  hx-target="#leasesWrapper"
+  hx-swap="outerHTML"
+  hx-trigger="submit, keyup changed delay:400ms from:input[name='q']">
+
+    <div class="card-body py-3">
+      <div class="row g-2 align-items-end">
+
+        <!-- فلترة حسب المستأجر -->
+        <div class="col-12 col-md-4">
+          <label class="form-label mb-1 small text-muted">فلترة حسب المستأجر</label>
+          <select class="form-select form-select-sm"
+                  name="tenant"
+                  hx-trigger="change">
+            <option value="" {% if not current_tenant %}selected{% endif %}>كل المستأجرين</option>
+            {% for t in tenants %}
+              <option value="{{ t.id }}" {% if current_tenant == t.id|stringformat:"s" %}selected{% endif %}>
+                {{ t.full_name }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- بحث باسم المستأجر -->
+        <div class="col-12 col-md-5">
+          <label class="form-label mb-1 small text-muted">بحث باسم المستأجر</label>
+          <input type="search"
+          class="form-control form-control-sm"
+          name="q"
+          value="{{ q|default:'' }}"
+          placeholder="اكتب اسم المستأجر...">
+        </div>
+
+        <!-- أزرار -->
+        <div class="col-12 col-md-3 d-flex gap-2">
+          <button class="btn btn-primary btn-sm flex-grow-1" type="submit">
+            بحث
+          </button>
+
+          <button class="btn btn-outline-secondary btn-sm"
+                  type="button"
+                  hx-get="{% url 'lease_list' %}"
+                  hx-target="#leasesWrapper"
+                  hx-swap="outerHTML">
+            مسح
+          </button>
+        </div>
+
+      </div>
+
+      {% if current_tenant or q %}
+      <div class="mt-2 small text-muted">
+        نتائج مفلترة
+        {% if current_tenant %} • مستأجر محدد{% endif %}
+        {% if q %} • بحث: “{{ q }}”{% endif %}
+      </div>
+      {% endif %}
+    </div>
+  </form>
+
+  <!-- ✅ الجدول كامل -->
+  <div class="card">
+    <div class="table-responsive">
+      <table class="table table-hover table-sm mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>الشقة المستأجرة</th>
+            <th>المستأجر</th>
+            <th>تاريخ بداية العقد</th>
+            <th>تاريخ نهاية العقد</th>
+            <th>الاجار الشهري</th>
+            <th>حالة العقد</th>
+            <th class="text-end">الاجراءات</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          {% for l in leases %}
+          <tr>
+            <td>{{ l.apartment }}</td>
+            <td>
+              <button type="button"
+                      class="btn btn-link p-0 text-decoration-none tenant-link"
+                      data-bs-toggle="modal"
+                      data-bs-target="#tenantModal"
+                      hx-get="{% url 'tenant_quick_view' l.tenant.id %}"
+                      hx-target="#tenantModalBody"
+                      hx-swap="innerHTML">
+                {{ l.tenant }}
+              </button>
+            </td>
+            
+            <td>{{ l.start_date }}</td>
+            <td>{{ l.end_date|default:"-" }}</td>
+            <td>{{ l.rent_amount }}</td>
+            <td>{{ l.get_status_display }}</td>
+            <td class="text-end">
+              <a class="btn btn-sm btn-outline-secondary"
+                 href="{% url 'lease_contract_preview' l.id %}"
+                 target="_blank" rel="noopener">
+                عقد PDF
+              </a>
+
+              <a class="btn btn-sm btn-outline-primary"
+                 href="{% url 'lease_edit' l.id %}"
+                 hx-get="{% url 'lease_edit' l.id %}"
+                 hx-target="#appModalBody">
+                تعديل
+              </a>
+
+              <a class="btn btn-sm btn-outline-danger"
+                 href="{% url 'lease_delete' l.id %}"
+                 hx-get="{% url 'lease_delete' l.id %}"
+                 hx-target="#appModalBody">
+                حذف
+              </a>
+            </td>
+          </tr>
+
+          {% empty %}
+          <tr>
+            <td colspan="7" class="text-center text-muted p-4">
+              لا توجد عقود إيجار مطابقة للفلتر.
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+
+      </table>
+    </div>
+  </div>
+<!-- Tenant Quick View Modal -->
+
+
+
+  
+
 </div>

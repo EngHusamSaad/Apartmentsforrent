@@ -12,10 +12,51 @@ from django.db.models import Q, Sum
 from datetime import timedelta
 from django.db import transaction
 
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import get_object_or_404
+from .models import Apartment
+
 
 from .models import Building, Apartment, Tenant, Lease, ContractTemplate
 from .forms import BuildingForm, ApartmentForm, TenantForm, LeaseForm
 from .utils import render_contract
+
+
+
+@login_required
+@require_POST
+def toggle_apartment_status(request, pk):
+    apt = get_object_or_404(Apartment, pk=pk)
+
+    if apt.status == Apartment.Status.MAINTENANCE:
+        return JsonResponse({"ok": False, "error": "لا يمكن تبديل حالة الصيانة من هنا."}, status=400)
+
+    active_qs = Lease.objects.filter(apartment=apt, status=Lease.Status.ACTIVE)
+    has_active = active_qs.exists()
+
+    # VACANT -> RENTED (مسموح فقط إذا في عقد نشط)
+    if apt.status == Apartment.Status.VACANT:
+        if not has_active:
+            return JsonResponse(
+                {"ok": False, "error": "لا يوجد عقد نشط لهذه الشقة. أنشئ عقداً أولاً ثم اجعلها مؤجرة."},
+                status=400
+            )
+        apt.status = Apartment.Status.RENTED
+        apt.save(update_fields=["status"])
+
+    # RENTED -> VACANT (مسموح فقط إذا ما في عقد نشط)
+    elif apt.status == Apartment.Status.RENTED:
+        if has_active:
+            return JsonResponse(
+                {"ok": False, "error": "يوجد عقد نشط لهذه الشقة. أنهِ العقد أولاً قبل تحويلها لشاغرة."},
+                status=400
+            )
+        apt.status = Apartment.Status.VACANT
+        apt.save(update_fields=["status"])
+
+    return JsonResponse({"ok": True, "status": apt.status, "display": apt.get_status_display()})
 
 
 def dashboard(request):
@@ -179,10 +220,23 @@ def building_delete(request, pk):
 # ---------- Apartments ----------
 # ===============================
 def apartment_list(request):
-    apartments = Apartment.objects.select_related("building").all().order_by("building__name", "apartment_no")
+    status = request.GET.get("status")  # VACANT / RENTED / None
+
+    apartments = Apartment.objects.select_related("building").all()
+
+    if status in ("VACANT", "RENTED"):
+        apartments = apartments.filter(status=status)
+
+    apartments = apartments.order_by("building__name", "apartment_no")
+
     is_htmx = request.headers.get("HX-Request")
     template = "listings/partials/apartment_list_partial.html" if is_htmx else "listings/apartment_list.html"
-    return render(request, template, {"apartments": apartments})
+
+    return render(request, template, {
+        "apartments": apartments,
+        "current_status": status,  # عشان نعمل active للزر
+    })
+
 
 
 def apartment_create(request):
@@ -273,12 +327,29 @@ def tenant_create(request):
     form = TenantForm(request.POST or None, request.FILES or None)
 
     if request.method == "POST" and form.is_valid():
-        form.save()
+        tenant = form.save(commit=False)
+
+        # (create) عادة ما في حذف، لكن لو حابب نخليها "آمنة" لو checkbox مفعلة:
+        if form.cleaned_data.get("remove_photo"):
+            if tenant.photo:
+                tenant.photo.delete(save=False)
+            tenant.photo = None
+
+        if form.cleaned_data.get("remove_id_image"):
+            if tenant.id_image:
+                tenant.id_image.delete(save=False)
+            tenant.id_image = None
+
+        tenant.save()
+
         tenants = Tenant.objects.all().order_by("full_name")
         resp = render(request, "listings/partials/tenant_list_partial.html", {"tenants": tenants})
+
         if is_htmx:
             resp["HX-Trigger"] = "closeModal"
-        return resp if is_htmx else redirect("tenant_list")
+            return resp
+
+        return redirect("tenant_list")
 
     if is_htmx:
         resp = render(request, "listings/partials/form_modal_partial.html", {
@@ -295,34 +366,56 @@ def tenant_create(request):
 def tenant_edit(request, pk):
     tenant = get_object_or_404(Tenant, pk=pk)
     is_htmx = request.headers.get("HX-Request")
+
+    old_photo = tenant.photo
+    old_id_image = tenant.id_image
+
     form = TenantForm(request.POST or None, request.FILES or None, instance=tenant)
 
     if request.method == "POST" and form.is_valid():
-        # إذا كنت تستخدم remove_id_image بالفورم (حسب شغلك السابق)
-        if hasattr(form, "cleaned_data") and form.cleaned_data.get("remove_id_image"):
-            if tenant.id_image:
-                tenant.id_image.delete(save=False)
-                tenant.id_image = None
+        obj = form.save(commit=False)
 
-        form.save()
+        # ✅ حذف الصورة الشخصية
+        if form.cleaned_data.get("remove_photo"):
+            if old_photo:
+                old_photo.delete(save=False)
+            obj.photo = None
+
+        # ✅ حذف صورة الهوية
+        if form.cleaned_data.get("remove_id_image"):
+            if old_id_image:
+                old_id_image.delete(save=False)
+            obj.id_image = None
+
+        obj.save()
+
+        # ✅ لو رفع ملف جديد، امسح القديم (تنظيف التخزين)
+        if old_photo and obj.photo and old_photo.name != obj.photo.name:
+            old_photo.delete(save=False)
+
+        if old_id_image and obj.id_image and old_id_image.name != obj.id_image.name:
+            old_id_image.delete(save=False)
+
         tenants = Tenant.objects.all().order_by("full_name")
         resp = render(request, "listings/partials/tenant_list_partial.html", {"tenants": tenants})
+
         if is_htmx:
             resp["HX-Trigger"] = "closeModal"
-        return resp if is_htmx else redirect("tenant_list")
+            return resp
+
+        return redirect("tenant_list")
 
     if is_htmx:
         resp = render(request, "listings/partials/form_modal_partial.html", {
             "form": form,
             "title": "تعديل مستأجر",
             "post_url": reverse("tenant_edit", args=[tenant.id]),
-            "tenant": tenant,  # إذا بتعرض thumbnail للصورة
+            "tenant": tenant,  # للعرض المصغر (thumbnails)
         })
         resp["HX-Retarget"] = "#appModalBody"
         return resp
 
     return render(request, "listings/form.html", {"form": form, "title": "تعديل مستأجر"})
-
 
 def tenant_delete(request, pk):
     obj = get_object_or_404(Tenant, pk=pk)
@@ -350,10 +443,34 @@ def tenant_delete(request, pk):
 # ---------- Leases ----------
 # ===========================
 def lease_list(request):
-    leases = Lease.objects.select_related("apartment", "tenant", "apartment__building").all().order_by("-start_date")
+    tenant_id = request.GET.get("tenant", "")
+    q = (request.GET.get("q", "") or "").strip()
+
+    leases = Lease.objects.select_related("apartment", "tenant", "apartment__building").all()
+
+    if tenant_id:
+        leases = leases.filter(tenant_id=tenant_id)
+
+    if q:
+        leases = leases.filter(
+            Q(tenant__full_name__icontains=q) |
+            Q(tenant__id_number__icontains=q) |
+            Q(tenant__phone__icontains=q)
+        )
+
+    leases = leases.order_by("-start_date")
+    tenants = Tenant.objects.all().order_by("full_name")
+
     is_htmx = request.headers.get("HX-Request")
     template = "listings/partials/lease_list_partial.html" if is_htmx else "listings/lease_list.html"
-    return render(request, template, {"leases": leases})
+
+    return render(request, template, {
+        "leases": leases,
+        "tenants": tenants,
+        "current_tenant": str(tenant_id) if tenant_id else "",
+        "q": q,
+    })
+
 
 
 def lease_create(request):
@@ -394,14 +511,11 @@ def lease_edit(request, pk):
             updated = form.save()
             apt = updated.apartment
 
-            # ✅ ضبط حالة الشقة حسب حالة العقد
             if updated.status == "ACTIVE":
                 apt.status = "RENTED"
             else:
-                # ENDED: رجّعها VACANT إذا ما في عقد نشط آخر
                 still_active = Lease.objects.filter(apartment=apt, status="ACTIVE").exclude(pk=updated.pk).exists()
                 apt.status = "RENTED" if still_active else "VACANT"
-
             apt.save(update_fields=["status"])
 
         if is_htmx:
@@ -412,11 +526,17 @@ def lease_edit(request, pk):
         return redirect("lease_list")
 
     if is_htmx:
-        resp = render(request, "listings/partials/form_modal_partial.html", {"form": form, "title": "تعديل عقد اجار"})
+        resp = render(request, "listings/partials/form_modal_partial.html", {
+            "form": form,
+            "title": "تعديل عقد إيجار",
+            "post_url": reverse("lease_edit", args=[lease.id]),  # ✅ مهم
+        })
         resp["HX-Retarget"] = "#appModalBody"
+        resp["HX-Trigger"] = "openModal"  # ✅ مهم
         return resp
 
-    return render(request, "listings/form.html", {"form": form, "title": "تعديل عقد اجار"})
+    return render(request, "listings/form.html", {"form": form, "title": "تعديل عقد إيجار"})
+
 
 
 def lease_delete(request, pk):
@@ -425,11 +545,8 @@ def lease_delete(request, pk):
 
     if request.method == "POST":
         apt = lease.apartment
-
         with transaction.atomic():
             lease.delete()
-
-            # ✅ إذا ما ظل في عقد نشط لنفس الشقة -> رجعها VACANT
             still_active = Lease.objects.filter(apartment=apt, status="ACTIVE").exists()
             if not still_active:
                 apt.status = "VACANT"
@@ -440,12 +557,19 @@ def lease_delete(request, pk):
             resp = render(request, "listings/partials/lease_list_partial.html", {"leases": leases})
             resp["HX-Trigger"] = "closeModal"
             return resp
-
         return redirect("lease_list")
 
     if is_htmx:
-        return render(request, "listings/partials/confirm_delete_modal_partial.html", {"object": lease, "title": "حذف عقد اجار"})
-    return render(request, "listings/confirm_delete.html", {"object": lease, "title": "حذف عقد اجار"})
+        resp = render(request, "listings/partials/confirm_delete_modal_partial.html", {
+            "object": lease,
+            "title": "حذف عقد إيجار",
+        })
+        resp["HX-Retarget"] = "#appModalBody"
+        resp["HX-Trigger"] = "openModal"   # ✅ مهم
+        return resp
+
+    return render(request, "listings/confirm_delete.html", {"object": lease, "title": "حذف عقد إيجار"})
+
 
 
 # =====================================
@@ -504,4 +628,19 @@ def lease_contract_preview(request, lease_id):
     return render(request, "listings/contract_preview.html", {
         "filled_body": filled_body,
         "title": template_obj.title
+    })
+    
+    
+def tenant_quick_view(request, pk):
+    tenant = get_object_or_404(Tenant, pk=pk)
+
+    # آخر/أحدث العقود للمستأجر (اختياري)
+    leases = (Lease.objects
+              .select_related("apartment")
+              .filter(tenant=tenant)
+              .order_by("-start_date")[:5])
+
+    return render(request, "listings/partials/tenant_quick_view.html", {
+        "tenant": tenant,
+        "leases": leases,
     })

@@ -54,7 +54,14 @@ class Tenant(models.Model):
     phone = models.CharField("رقم الهاتف", max_length=50, blank=True)
     id_number = models.CharField("رقم الهوية", max_length=50, blank=True)
 
-    address = models.CharField("العنوان", max_length=255, blank=True)  # ✅ جديد
+    address = models.CharField("العنوان", max_length=255, blank=True)
+
+    photo = models.ImageField(
+        "الصورة الشخصية",
+        upload_to="tenant_photos/",
+        blank=True,
+        null=True
+    )
 
     id_image = models.ImageField("صورة الهوية", upload_to="tenant_ids/", blank=True, null=True)
     notes = models.TextField("ملاحظات", blank=True)

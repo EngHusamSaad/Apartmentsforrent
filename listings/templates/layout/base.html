@@ -1,3 +1,4 @@
+<!-- layout/base.html -->
 <!doctype html>
 <html lang="ar" dir="rtl">
 <head>
@@ -5,10 +6,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>{% block title %}Apartments{% endblock %}</title>
 
-  <!-- Cairo font -->
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
-  <!-- Bootstrap 5 CDN -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
   <style>
     body { font-family: 'Cairo', sans-serif; }
     .sidebar {
@@ -16,36 +16,61 @@
       min-height: 100vh;
       position: sticky;
       top: 0;
+      text-align: center;
     }
-    .nav-link.active {
-      font-weight: 600;
+    .nav-link.active { font-weight: 600; }
+
+    .sidebar-logo {
+      width: 150px;
+      height: auto;
+      margin-bottom: 5px;
     }
+
+    .object-fit-cover { object-fit: cover; }
+
+    .tenant-link { font-weight: 600; }
+    .tenant-link:hover { text-decoration: underline !important; }
+
+    .modal .table th, .modal .table td { vertical-align: middle; }
+    .modal .badge { font-weight: 600; }
+    .modal .border { border-color: rgba(0,0,0,.08) !important; }
+
+    /* يساعد على ترتيب زر الإغلاق بكل المودالات */
+    .modal-header .btn-close { margin: 0 !important; }
   </style>
 </head>
-<body class="bg-light">
 
+<body class="bg-light">
 <div class="d-flex">
+
   <!-- Sidebar -->
   <aside class="sidebar bg-white border-end p-3">
-    <div class="mb-4">
-      <div class="fw-bold fs-5">عُمران</div>
-      <div class="text-muted small">نظام ادارة العقارات والمستأجرين</div>
+    {% load static %}
+
+    <div class="mb-4 text-center">
+      <img src="{% static 'listings/images/logo.png' %}"
+           alt="شعار عمران"
+           class="sidebar-logo">
+
+      <div class="text-muted small">
+        نظام إدارة العقارات والمستأجرين
+      </div>
     </div>
 
     <nav class="nav nav-pills flex-column gap-1">
-      <a class="nav-link" data-nav="dashboard" href="{% url 'dashboard' %}" hx-get="{% url 'dashboard' %}" hx-target="#main-content" hx-push-url="true">
+      <a class="nav-link" href="{% url 'dashboard' %}" hx-get="{% url 'dashboard' %}" hx-target="#main-content" hx-push-url="true">
         لوحة التحكم
       </a>
-      <a class="nav-link" data-nav="buildings" href="{% url 'building_list' %}" hx-get="{% url 'building_list' %}" hx-target="#main-content" hx-push-url="true">
+      <a class="nav-link" href="{% url 'building_list' %}" hx-get="{% url 'building_list' %}" hx-target="#main-content" hx-push-url="true">
         المباني
       </a>
-      <a class="nav-link" data-nav="apartments" href="{% url 'apartment_list' %}" hx-get="{% url 'apartment_list' %}" hx-target="#main-content" hx-push-url="true">
+      <a class="nav-link" href="{% url 'apartment_list' %}" hx-get="{% url 'apartment_list' %}" hx-target="#main-content" hx-push-url="true">
         الشقق
       </a>
-      <a class="nav-link" data-nav="tenants" href="{% url 'tenant_list' %}" hx-get="{% url 'tenant_list' %}" hx-target="#main-content" hx-push-url="true">
+      <a class="nav-link" href="{% url 'tenant_list' %}" hx-get="{% url 'tenant_list' %}" hx-target="#main-content" hx-push-url="true">
         المستأجرون
       </a>
-      <a class="nav-link" data-nav="leases" href="{% url 'lease_list' %}" hx-get="{% url 'lease_list' %}" hx-target="#main-content" hx-push-url="true">
+      <a class="nav-link" href="{% url 'lease_list' %}" hx-get="{% url 'lease_list' %}" hx-target="#main-content" hx-push-url="true">
         عقود الإيجار
       </a>
     </nav>
@@ -66,8 +91,8 @@
   </main>
 </div>
 
-<!-- App Modal -->
-<div class="modal fade" id="appModal" tabindex="-1">
+<!-- App Modal (forms) -->
+<div class="modal fade" id="appModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
@@ -79,35 +104,256 @@
   </div>
 </div>
 
+<!-- Toggle Status Modal (ONE place only) -->
+<div class="modal fade" id="toggleStatusModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+
+      <div class="modal-header">
+        <h5 class="modal-title">تأكيد تغيير الحالة</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="إغلاق"></button>
+      </div>
+
+      <div class="modal-body">
+        <p id="toggleStatusText" class="mb-0"></p>
+        <div id="maintenanceHint" class="alert alert-warning mt-3 d-none mb-0">
+          حالة الشقة "صيانة" لا يتم تبديلها من هنا.
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+        <button type="button" class="btn btn-primary" id="confirmToggleBtn">تأكيد</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Error Modal (ONE place only) -->
+<div class="modal fade" id="errorModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content border-danger">
+      <div class="modal-header bg-danger text-white">
+        <h5 class="modal-title">خطأ</h5>
+        <button type="button" class="btn-close m-0" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+
+      <div class="modal-body">
+        <p id="errorModalText" class="mb-0"></p>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إغلاق</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://unpkg.com/htmx.org@1.9.12"></script>
-<script>
-function setActiveNav() {
-  var path = window.location.pathname;
-  document.querySelectorAll('.sidebar [data-nav]').forEach(function(el) {
-    var nav = el.getAttribute('data-nav');
-    var isActive = (nav === 'dashboard' && (path === '/' || path === '')) ||
-      (nav !== 'dashboard' && path.indexOf('/' + nav + '/') === 0);
-    el.classList.toggle('active', !!isActive);
-  });
-}
-document.addEventListener('DOMContentLoaded', setActiveNav);
-document.body.addEventListener('htmx:pushedIntoHistory', setActiveNav);
-document.body.addEventListener('htmx:afterOnLoad', setActiveNav);
-document.body.addEventListener('htmx:afterSwap', function(evt) {
-  if (evt.detail.target && evt.detail.target.id === 'appModalBody') {
-    bootstrap.Modal.getOrCreateInstance(document.getElementById('appModal')).show();
-  }
-});
 
-document.body.addEventListener('closeModal', function() {
-  const modalEl = document.getElementById('appModal');
-  bootstrap.Modal.getOrCreateInstance(modalEl).hide();
-  document.getElementById('appModalBody').innerHTML = '';
-});
-document.body.addEventListener('closeModal', function() {
-  bootstrap.Modal.getInstance(document.getElementById('appModal'))?.hide();
-});
+<script>
+  // ========= Sidebar active (reliable with HTMX) =========
+  function setActiveNav() {
+    const path = window.location.pathname;
+    document.querySelectorAll('.sidebar a.nav-link').forEach(function(a) {
+      const href = a.getAttribute('href');
+      const isActive = (href === path) || (href !== '/' && path.startsWith(href));
+      a.classList.toggle('active', isActive);
+    });
+  }
+  document.addEventListener('DOMContentLoaded', setActiveNav);
+  document.body.addEventListener('htmx:pushedIntoHistory', setActiveNav);
+  document.body.addEventListener('htmx:afterSwap', setActiveNav);
+  document.body.addEventListener('htmx:afterSettle', setActiveNav);
+
+  // ========= App Modal open/close (forms) =========
+  document.body.addEventListener('htmx:afterSwap', function(evt) {
+    if (evt.detail.target && evt.detail.target.id === 'appModalBody') {
+      bootstrap.Modal.getOrCreateInstance(document.getElementById('appModal')).show();
+    }
+  });
+
+  document.body.addEventListener('closeModal', function() {
+    const modalEl = document.getElementById('appModal');
+    bootstrap.Modal.getOrCreateInstance(modalEl).hide();
+    document.getElementById('appModalBody').innerHTML = '';
+  });
+
+  // ========= Apartments Toggle Status (Global) =========
+  let selectedApartmentId = null;
+  let selectedBadgeEl = null;
+  let allowToggle = true;
+
+  function showErrorModal(message) {
+    const el = document.getElementById("errorModalText");
+    if (el) el.textContent = message;
+    bootstrap.Modal.getOrCreateInstance(document.getElementById("errorModal")).show();
+  }
+
+  function openToggleStatusModal(el) {
+    selectedBadgeEl = el;
+    selectedApartmentId = el.dataset.apartmentId;
+
+    const currentStatus = el.dataset.currentStatus;   // VACANT / RENTED / MAINT
+    const currentDisplay = el.dataset.currentDisplay; // display text
+
+    const maintenanceHint = document.getElementById("maintenanceHint");
+    if (maintenanceHint) maintenanceHint.classList.add("d-none");
+    allowToggle = true;
+
+    if (currentStatus === "MAINT") {
+      document.getElementById("toggleStatusText").textContent =
+        `الحالة الحالية: "${currentDisplay}".`;
+      if (maintenanceHint) maintenanceHint.classList.remove("d-none");
+      allowToggle = false;
+    } else {
+      const nextDisplay = (currentStatus === "RENTED") ? "شاغرة" : "مؤجرة";
+      document.getElementById("toggleStatusText").textContent =
+        `هل تريد تغيير حالة الشقة من "${currentDisplay}" إلى "${nextDisplay}"؟`;
+    }
+
+    const confirmBtn = document.getElementById("confirmToggleBtn");
+    if (confirmBtn) confirmBtn.disabled = !allowToggle;
+
+    bootstrap.Modal.getOrCreateInstance(document.getElementById("toggleStatusModal")).show();
+  }
+
+  function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== "") {
+      const cookies = document.cookie.split(";");
+      for (let i = 0; i < cookies.length; i++) {
+        const cookie = cookies[i].trim();
+        if (cookie.substring(0, name.length + 1) === (name + "=")) {
+          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+          break;
+        }
+      }
+    }
+    return cookieValue;
+  }
+
+  document.addEventListener("click", async (e) => {
+    const btn = e.target.closest && e.target.closest("#confirmToggleBtn");
+    if (!btn) return;
+
+    if (!allowToggle || !selectedApartmentId || !selectedBadgeEl) return;
+
+    try {
+      const res = await fetch(`/apartments/${selectedApartmentId}/toggle-status/`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-CSRFToken": getCookie("csrftoken"),
+          "X-Requested-With": "XMLHttpRequest",
+        },
+        body: JSON.stringify({})
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || !data.ok) {
+        showErrorModal(data.error || "صار خطأ أثناء تغيير الحالة");
+        return;
+      }
+
+      selectedBadgeEl.dataset.currentStatus = data.status;
+      selectedBadgeEl.dataset.currentDisplay = data.display;
+      selectedBadgeEl.textContent = data.display;
+
+      selectedBadgeEl.classList.remove("bg-danger", "bg-success", "bg-warning", "text-dark");
+      if (data.status === "RENTED") selectedBadgeEl.classList.add("bg-danger");
+      else if (data.status === "VACANT") selectedBadgeEl.classList.add("bg-success");
+      else selectedBadgeEl.classList.add("bg-warning", "text-dark");
+
+      bootstrap.Modal.getInstance(document.getElementById("toggleStatusModal"))?.hide();
+
+    } catch (err) {
+      showErrorModal("مشكلة اتصال أو خطأ غير متوقع");
+    }
+  });
 </script>
+
+<!-- Tenant Quick View Modal -->
+<div class="modal fade" id="tenantModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-md">
+    <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+
+      <!-- ✅ FIXED HEADER (RTL-safe) -->
+      <div class="modal-header bg-light">
+        <div class="w-100 d-flex align-items-center justify-content-between">
+
+          <div class="d-flex align-items-center gap-3">
+            <div class="rounded-circle bg-primary-subtle d-flex align-items-center justify-content-center"
+                 style="width:44px;height:44px;">
+              <span class="fw-bold text-primary">م</span>
+            </div>
+            <div>
+              <div class="fw-bold" style="line-height:1.1">تفاصيل المستأجر</div>
+              <div class="small text-muted">عرض سريع</div>
+            </div>
+          </div>
+
+          <button type="button"
+                  class="btn-close m-0 flex-shrink-0"
+                  data-bs-dismiss="modal"
+                  aria-label="Close"></button>
+        </div>
+      </div>
+
+      <div class="modal-body p-3">
+        <div id="tenantModalBody">
+          <div class="py-4 text-center text-muted">
+            <div class="spinner-border" role="status" aria-hidden="true"></div>
+            <div class="mt-2 small">جاري تحميل البيانات...</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer bg-light">
+        <button class="btn btn-outline-secondary" type="button" data-bs-dismiss="modal">إغلاق</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+<!-- Image Preview Modal -->
+<div class="modal fade" id="imagePreviewModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content bg-transparent border-0">
+
+      <div class="modal-header border-0">
+        <button type="button"
+                class="btn-close bg-white rounded-circle p-2"
+                data-bs-dismiss="modal"
+                aria-label="Close"></button>
+      </div>
+
+      <div class="modal-body text-center p-0">
+        <img id="previewImage"
+             src=""
+             class="img-fluid rounded shadow"
+             style="max-height:80vh;">
+      </div>
+
+    </div>
+  </div>
+</div>
+<script>
+  document.addEventListener("click", function(e) {
+    const img = e.target.closest(".previewable-image");
+    if (!img) return;
+
+    const preview = document.getElementById("previewImage");
+    preview.src = img.dataset.full;
+
+    bootstrap.Modal.getOrCreateInstance(
+      document.getElementById("imagePreviewModal")
+    ).show();
+  });
+</script>
+
 </body>
 </html>
