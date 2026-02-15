@@ -73,6 +73,8 @@
     </div>
   </div>
 
+  
+
   <!-- Occupancy -->
   <div class="col-12 col-xl-5">
     <div class="card h-100 shadow-sm">
@@ -132,7 +134,57 @@
 
 </div>
 
-<hr class="my-4">
+{# ===== تنبيه استحقاق الأجرة الشهرية ===== #}
+  {% if show_rent_notice %}
+    <div class="alert alert-info d-flex align-items-start justify-content-between gap-3 mb-4">
+      <div>
+        <div class="fw-bold">تنبيه: استحقاق الأجرة للشهر القادم</div>
+        <div class="text-muted small">
+          تاريخ الاستحقاق: {{ next_month_start }}
+        </div>
+      </div>
+  
+      <div class="text-end">
+        <div class="small text-muted">إجمالي متوقع</div>
+        <div class="fs-5 fw-bold">{{ rent_due_total }}</div>
+      </div>
+    </div>
+  
+    {% if rent_due_leases %}
+      <div class="card shadow-sm mb-4">
+        <div class="card-body">
+          <div class="d-flex align-items-center justify-content-between mb-2">
+            <h6 class="mb-0">تفاصيل الاستحقاق (أول 10)</h6>
+            <a class="btn btn-sm btn-outline-primary" href="{% url 'lease_list' %}">عرض كل العقود</a>
+          </div>
+  
+          <div class="table-responsive">
+            <table class="table table-sm align-middle mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th>المستأجر</th>
+                  <th>العمارة</th>
+                  <th>الشقة</th>
+                  <th class="text-end">الأجرة</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for l in rent_due_leases %}
+                  <tr>
+                    <td>{{ l.tenant.full_name }}</td>
+                    <td>{{ l.apartment.building.name }}</td>
+                    <td>{{ l.apartment.apartment_no }}</td>
+                    <td class="text-end fw-semibold">{{ l.rent_amount }}</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+  
+        </div>
+      </div>
+    {% endif %}
+  {% endif %}
 
 <!-- Expiring leases -->
 <div class="card shadow-sm">

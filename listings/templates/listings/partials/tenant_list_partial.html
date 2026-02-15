@@ -8,8 +8,8 @@
 
 <div class="card shadow-sm">
   <div class="table-responsive">
-    <table class="table table-hover mb-0 align-middle">
-      <thead class="table-light">
+    <table class="table text-center">
+      <thead class="table-light align-middle">
         <tr>
           <th style="width:70px">الصورة</th>
           <th>الاسم</th>
@@ -50,15 +50,18 @@
               <span class="text-muted">—</span>
             {% endif %}
           </td>
-          <td class="text-end">
-            <div class="btn-group btn-group-sm">
-              <a class="btn btn-outline-primary" hx-get="{% url 'tenant_edit' t.id %}" hx-target="#appModalBody"
-                role="button">
+          <td>
+            <div class="d-flex justify-content-center gap-2">
+              <a class="btn btn-sm btn-outline-primary rounded-pill px-3"
+                 hx-get="{% url 'tenant_edit' t.id %}"
+                 hx-target="#appModalBody">
                 تعديل
               </a>
 
-              <a class="btn btn-outline-danger" hx-get="{% url 'tenant_delete' t.id %}" hx-target="#appModalBody"
-                role="button">
+              <a class="btn btn-sm btn-outline-danger rounded-pill px-3"
+                 hx-get="{% url 'tenant_delete' t.id %}"
+                 hx-target="#appModalBody"
+                 onclick="return confirm('متأكد من الحذف؟');">
                 حذف
               </a>
             </div>
