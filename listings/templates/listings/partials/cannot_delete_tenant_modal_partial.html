@@ -1,0 +1,32 @@
+<p class="mb-2">
+    لا يمكن حذف: <strong>{{ object }}</strong>
+  </p>
+  
+  <div class="alert alert-warning py-2">
+    {{ message|default:"هذا المستأجر مرتبط بعقد/عقود إيجار. احذف/أنهِ العقود أولاً." }}
+  </div>
+  
+  {% if leases %}
+    <div class="small text-muted mb-2">العقود المرتبطة:</div>
+    <ul class="list-group mb-3">
+      {% for lease in leases %}
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+          <span>
+            {{ lease }}
+          </span>
+          <span class="badge bg-secondary">
+            {{ lease.status }}
+          </span>
+        </li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+  
+  <div class="d-flex gap-2">
+    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">إغلاق</button>
+  </div>
+  
+  <script>
+    document.getElementById('appModalTitle').textContent = '{{ title|escapejs }}';
+  </script>
+  

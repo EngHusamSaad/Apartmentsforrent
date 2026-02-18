@@ -23,7 +23,10 @@ urlpatterns = [
     path("leases/add/", views.lease_create, name="lease_create"),
     path("leases/<int:pk>/edit/", views.lease_edit, name="lease_edit"),
     path("leases/<int:pk>/delete/", views.lease_delete, name="lease_delete"),
+    path("leases/<int:pk>/toggle-status/", views.lease_toggle_status, name="lease_toggle_status"),
     path("leases/<int:lease_id>/contract/", views.lease_contract_preview, name="lease_contract_preview"),
+    path("leases/<int:lease_id>/contract/pdf/", views.lease_contract_pdf, name="lease_contract_pdf"),
+
     
     path("apartments/<int:pk>/toggle-status/", views.toggle_apartment_status, name="toggle_apartment_status"),
     path("tenants/quick/<int:pk>/", views.tenant_quick_view, name="tenant_quick_view"),

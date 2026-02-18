@@ -1,5 +1,4 @@
 <!-- listings/partials/lease_list_partial.html -->
-<title hx-swap-oob="true">عقود الإيجار | عُمران</title>
 
 <div id="leasesWrapper">
 
@@ -96,7 +95,7 @@
 
         <tbody>
           {% for l in leases %}
-          <tr>
+          <tr class="{% if l.status == 'EXPIRED' %}table-danger{% endif %}">
             <td>{{ forloop.counter }}</td>  <!-- 👈 التعداد -->
 
             <td>{{ l.apartment }}</td>
@@ -115,7 +114,21 @@
             <td>{{ l.start_date }}</td>
             <td>{{ l.end_date|default:"-" }}</td>
             <td>{{ l.rent_amount }}</td>
-            <td>{{ l.get_status_display }}</td>
+            <td>
+              <button type="button"
+                      class="btn btn-link p-0 text-decoration-none"
+                      hx-get="{% url 'lease_toggle_status' l.id %}?tenant={{ current_tenant|urlencode }}&q={{ q|urlencode }}"
+                      hx-target="#appModalBody"
+                      hx-swap="innerHTML">
+                {% if l.status == 'ACTIVE' %}
+                  <span class="badge text-bg-success">نشط</span>
+                {% elif l.status == 'EXPIRED' %}
+                  <span class="badge text-bg-danger">منتهي</span>
+                {% else %}
+                  <span class="badge text-bg-secondary">{{ l.get_status_display }}</span>
+                {% endif %}
+              </button>
+            </td>
             <td class="text-end">
               <a class="btn btn-sm btn-outline-secondary"
                  href="{% url 'lease_contract_preview' l.id %}"

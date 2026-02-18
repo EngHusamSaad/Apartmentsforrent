@@ -80,3 +80,11 @@ class LeaseForm(forms.ModelForm):
                 raise forms.ValidationError("هذه الشقة مؤجرة حاليًا بعقد نشط، ولا يمكن تأجيرها لشخص آخر.")
 
         return cleaned
+
+
+class LeaseExpireForm(forms.Form):
+    end_date = forms.DateField(
+        required=True,
+        label="تاريخ نهاية العقد",
+        widget=forms.DateInput(attrs={"type": "date", "class": "form-control"}),
+    )

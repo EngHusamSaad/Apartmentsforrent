@@ -20,8 +20,19 @@ from .models import Apartment
 
 
 from .models import Building, Apartment, Tenant, Lease, ContractTemplate
-from .forms import BuildingForm, ApartmentForm, TenantForm, LeaseForm
+from .forms import BuildingForm, ApartmentForm, TenantForm, LeaseForm, LeaseExpireForm
 from .utils import render_contract
+
+
+from django.http import HttpResponse
+from django.template.loader import render_to_string
+from django.utils.timezone import now
+from django.conf import settings
+import pdfkit
+
+from django.db.models.deletion import ProtectedError
+
+
 
 
 
@@ -422,19 +433,47 @@ def tenant_delete(request, pk):
     is_htmx = request.headers.get("HX-Request")
 
     if request.method == "POST":
-        obj.delete()
-        if is_htmx:
-            tenants = Tenant.objects.all().order_by("full_name")
-            resp = render(request, "listings/partials/tenant_list_partial.html", {"tenants": tenants})
-            resp["HX-Trigger"] = "closeModal"
-            return resp
-        return redirect("tenant_list")
+        try:
+            obj.delete()
 
+            if is_htmx:
+                tenants = Tenant.objects.all().order_by("full_name")
+                resp = render(request, "listings/partials/tenant_list_partial.html", {"tenants": tenants})
+                resp["HX-Trigger"] = "closeModal"
+                return resp
+            return redirect("tenant_list")
+
+        except ProtectedError:
+            # عقود مرتبطة تمنع الحذف
+            leases = Lease.objects.select_related("apartment", "apartment__building").filter(tenant=obj).order_by("-start_date")
+
+            if is_htmx:
+                resp = render(request, "listings/partials/cannot_delete_tenant_modal_partial.html", {
+                    "object": obj,
+                    "title": "تعذّر حذف المستأجر",
+                    "leases": leases,
+                    "message": "لا يمكن حذف المستأجر لأنه مرتبط بعقد/عقود إيجار. احذف العقود أولاً.",
+                })
+                resp["HX-Retarget"] = "#appModalBody"
+                resp["HX-Trigger"] = "openModal"
+                return resp
+
+            return render(request, "listings/cannot_delete_tenant.html", {
+                "object": obj,
+                "title": "تعذّر حذف المستأجر",
+                "leases": leases,
+                "message": "لا يمكن حذف المستأجر لأنه مرتبط بعقد/عقود إيجار. احذف العقود أولاً.",
+            })
+
+    # GET
     if is_htmx:
-        return render(request, "listings/partials/confirm_delete_modal_partial.html", {
+        resp = render(request, "listings/partials/confirm_delete_modal_partial.html", {
             "object": obj,
             "title": "حذف مستأجر",
         })
+        resp["HX-Retarget"] = "#appModalBody"
+        resp["HX-Trigger"] = "openModal"
+        return resp
 
     return render(request, "listings/confirm_delete.html", {"object": obj, "title": "حذف مستأجر"})
 
@@ -443,6 +482,14 @@ def tenant_delete(request, pk):
 # ---------- Leases ----------
 # ===========================
 def lease_list(request):
+    # (A) تحويل تلقائي للحالة: ACTIVE -> EXPIRED إذا انتهى العقد (اليوم التالي لانتهاء العقد)
+    today = timezone.localdate()
+    Lease.objects.filter(
+        status=Lease.Status.ACTIVE,
+        end_date__isnull=False,
+        end_date__lt=today,
+    ).update(status=Lease.Status.EXPIRED)
+
     tenant_id = request.GET.get("tenant", "")
     q = (request.GET.get("q", "") or "").strip()
 
@@ -470,6 +517,112 @@ def lease_list(request):
         "current_tenant": str(tenant_id) if tenant_id else "",
         "q": q,
     })
+
+
+def lease_toggle_status(request, pk):
+    lease = get_object_or_404(
+        Lease.objects.select_related("apartment", "tenant", "apartment__building"),
+        pk=pk
+    )
+    is_htmx = request.headers.get("HX-Request")
+
+    tenant_id = request.GET.get("tenant", "") if request.method == "GET" else request.POST.get("tenant", "")
+    q = (request.GET.get("q", "") or "").strip() if request.method == "GET" else (request.POST.get("q", "") or "").strip()
+
+    if request.method == "POST":
+        if lease.status == Lease.Status.ACTIVE:
+            form = LeaseExpireForm(request.POST)
+            if form.is_valid():
+                end_date = form.cleaned_data["end_date"]
+                if lease.start_date and end_date < lease.start_date:
+                    form.add_error("end_date", "تاريخ النهاية لا يمكن أن يكون قبل تاريخ البداية.")
+                else:
+                    lease.status = Lease.Status.EXPIRED
+                    lease.end_date = end_date
+                    lease.save(update_fields=["status", "end_date"])
+
+                    # تحديث الجدول فقط (#leasesWrapper) + اغلاق المودال
+                    leases = Lease.objects.select_related("apartment", "tenant", "apartment__building").all()
+                    if tenant_id:
+                        leases = leases.filter(tenant_id=tenant_id)
+                    if q:
+                        leases = leases.filter(
+                            Q(tenant__full_name__icontains=q) |
+                            Q(tenant__id_number__icontains=q) |
+                            Q(tenant__phone__icontains=q)
+                        )
+                    leases = leases.order_by("-start_date")
+                    tenants = Tenant.objects.all().order_by("full_name")
+                    response = render(request, "listings/partials/lease_list_partial.html", {
+                        "leases": leases,
+                        "tenants": tenants,
+                        "current_tenant": str(tenant_id) if tenant_id else "",
+                        "q": q,
+                    })
+                    response["HX-Trigger"] = "closeModal"
+                    return response
+        else:
+            # EXPIRED -> ACTIVE (مسح end_date)
+            lease.status = Lease.Status.ACTIVE
+            lease.end_date = None
+            lease.save(update_fields=["status", "end_date"])
+
+            leases = Lease.objects.select_related("apartment", "tenant", "apartment__building").all()
+            if tenant_id:
+                leases = leases.filter(tenant_id=tenant_id)
+            if q:
+                leases = leases.filter(
+                    Q(tenant__full_name__icontains=q) |
+                    Q(tenant__id_number__icontains=q) |
+                    Q(tenant__phone__icontains=q)
+                )
+            leases = leases.order_by("-start_date")
+            tenants = Tenant.objects.all().order_by("full_name")
+            response = render(request, "listings/partials/lease_list_partial.html", {
+                "leases": leases,
+                "tenants": tenants,
+                "current_tenant": str(tenant_id) if tenant_id else "",
+                "q": q,
+            })
+            response["HX-Trigger"] = "closeModal"
+            return response
+
+        # لو في أخطاء: ارجع نفس المودال مع الأخطاء
+        if is_htmx:
+            title = "إنهاء العقد" if lease.status == Lease.Status.ACTIVE else "إرجاع لنشط"
+            resp = render(request, "listings/partials/lease_toggle_status_modal_partial.html", {
+                "lease": lease,
+                "form": form if lease.status == Lease.Status.ACTIVE else None,
+                "title": title,
+                "tenant": tenant_id,
+                "q": q,
+                "today": timezone.localdate(),
+            })
+            resp["HX-Retarget"] = "#appModalBody"
+            resp["HX-Reswap"] = "innerHTML"
+            return resp
+
+    # GET: اعرض المودال بحسب الحالة
+    if lease.status == Lease.Status.ACTIVE:
+        form = LeaseExpireForm(initial={"end_date": timezone.localdate()})
+        title = "إنهاء العقد"
+    else:
+        form = None
+        title = "إرجاع لنشط"
+
+    if is_htmx:
+        resp = render(request, "listings/partials/lease_toggle_status_modal_partial.html", {
+            "lease": lease,
+            "form": form,
+            "title": title,
+            "tenant": tenant_id,
+            "q": q,
+            "today": timezone.localdate(),
+        })
+        resp["HX-Retarget"] = "#appModalBody"
+        return resp
+
+    return redirect("lease_list")
 
 
 
@@ -573,9 +726,9 @@ def lease_delete(request, pk):
 
 
 # =====================================
-# ---------- Lease Contract Preview ----
+# ---------- Lease Contract Helpers ----
 # =====================================
-def lease_contract_preview(request, lease_id):
+def _build_contract_filled_body(lease_id):
     lease = get_object_or_404(
         Lease.objects.select_related("apartment", "tenant", "apartment__building"),
         pk=lease_id
@@ -584,7 +737,6 @@ def lease_contract_preview(request, lease_id):
     bld = apt.building
     tenant = lease.tenant
 
-    # إذا عندك tenant.address بالموديل، استخدمه، وإلا خليها خطوط
     tenant_address = getattr(tenant, "address", "") or "________________"
 
     data = {
@@ -609,12 +761,11 @@ def lease_contract_preview(request, lease_id):
     }
 
     template_obj = ContractTemplate.objects.filter(is_active=True).first()
-
     if not template_obj:
-        return render(request, "listings/contract_preview.html", {
+        return {
+            "title": "عقد إيجار",
             "filled_body": "لا يوجد قالب عقد نشط.",
-            "title": "عقد إيجار"
-        })
+        }
 
     dynamic_keys = {
         "landlord_name", "landlord_id", "landlord_address", "city",
@@ -625,16 +776,58 @@ def lease_contract_preview(request, lease_id):
 
     filled_body = render_contract(template_obj.body, data, dynamic_keys)
 
-    return render(request, "listings/contract_preview.html", {
+    return {
+        "title": template_obj.title,
         "filled_body": filled_body,
-        "title": template_obj.title
+    }
+
+
+# =====================================
+# ---------- Lease Contract Preview ----
+# =====================================
+def lease_contract_preview(request, lease_id):
+    ctx = _build_contract_filled_body(lease_id)
+
+    # ✅ مهم جدًا: مرّر lease_id عشان زر PDF يشتغل
+    return render(request, "listings/contract_preview.html", {
+        "filled_body": ctx["filled_body"],
+        "title": ctx["title"],
+        "lease_id": lease_id,
     })
-    
-    
+
+
+# =====================================
+# ---------- Lease Contract PDF --------
+# =====================================
+def lease_contract_pdf(request, lease_id):
+    from weasyprint import HTML  # داخل الفنكشن حتى ما يكسر runserver
+
+    ctx = _build_contract_filled_body(lease_id)
+
+    context = {
+        "title": ctx["title"],
+        "filled_body": ctx["filled_body"],
+        "year": now().year,
+    }
+
+    html_string = render_to_string(
+        "listings/contract_preview_pdf.html",
+        context,
+        request=request
+    )
+
+    pdf_bytes = HTML(
+        string=html_string,
+        base_url=request.build_absolute_uri("/")  # لقراءة static/logo
+    ).write_pdf()
+
+    response = HttpResponse(pdf_bytes, content_type="application/pdf")
+    response["Content-Disposition"] = f'inline; filename="contract_{lease_id}.pdf"'
+    return response
+
 def tenant_quick_view(request, pk):
     tenant = get_object_or_404(Tenant, pk=pk)
 
-    # آخر/أحدث العقود للمستأجر (اختياري)
     leases = (Lease.objects
               .select_related("apartment")
               .filter(tenant=tenant)

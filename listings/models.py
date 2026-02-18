@@ -78,6 +78,7 @@ class Tenant(models.Model):
 class Lease(models.Model):
     class Status(models.TextChoices):
         ACTIVE = "ACTIVE", "نشط"
+        EXPIRED = "EXPIRED", "منتهي"
         ENDED = "ENDED", "منتهي"
 
     apartment = models.ForeignKey(

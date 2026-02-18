@@ -1,5 +1,4 @@
 
-<title hx-swap-oob="true">المستأجرون | عُمران</title>
 
 <div class="d-flex align-items-center justify-content-between mb-3">
   <h3 class="mb-0">المستأجرون</h3>
@@ -63,8 +62,7 @@
 
               <a class="btn btn-sm btn-outline-danger rounded-pill px-3"
                  hx-get="{% url 'tenant_delete' t.id %}"
-                 hx-target="#appModalBody"
-                 onclick="return confirm('متأكد من الحذف؟');">
+                 hx-target="#appModalBody";">
                 حذف
               </a>
             </div>
